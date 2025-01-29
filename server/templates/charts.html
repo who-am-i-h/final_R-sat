@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Monitoring Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='chart.css') }}">
+</head>
+<body>
+    <div class="container dashboard">
+        <h1 class="text-center mb-4">Resource Monitoring Dashboard</h1>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <h5 class="card-title"><p class="text-show">CPU Usage</p></h5>
+                    <div class="chart-container">
+                        <canvas id="cpuChart" class="circle-chart"></canvas>
+                    </div>
+                    <div class="info" id="cpuInfo"><p class="text-show">Loading...</p></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <h5 class="card-title"><p class="text-show">RAM Usage</p></h5>
+                    <div class="chart-container">
+                        <canvas id="ramChart" class="circle-chart"></canvas>
+                    </div>
+                    <div class="info" id="ramInfo"><p class="text-show">Loading...</p></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <h5 class="card-title"><p class="text-show">Disk Usage</p></h5>
+                    <div class="chart-container">
+                        <canvas id="diskChart" class="circle-chart"></canvas>
+                    </div>
+                    <div class="info" id="diskInfo"><p class="text-show">Loading...</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="button" id = "butn" class="btn btn-primary btn-lg btn-block" onclick="window.location.href = `${window.location.origin}/dashboard`">Dashboard</button>
+    <script>let cid = {{cid}}</script>
+    <script src="{{url_for('static', filename='chart.js')}}"></script>
+</body>
+</html>

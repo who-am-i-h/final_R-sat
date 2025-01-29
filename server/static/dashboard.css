@@ -1,0 +1,49 @@
+body {
+    background: #1e1e2f;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.server-tile {
+    background: #40405e;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: left;
+    margin-bottom: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.server-tile:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+}
+
+.server-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.server-ip,
+.server-status {
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-online {
+    background: #28a745;
+}
+
+.status-offline {
+    background: #dc3545;
+}

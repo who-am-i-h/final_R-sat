@@ -1,0 +1,8 @@
+main.py
+tr.py
+try.py
+__pycache__
+*.log
+ecc_learn.py
+disc.py
+

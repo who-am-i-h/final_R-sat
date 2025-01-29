@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Shell</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles1.css') }}">
+</head>
+<body>
+  <div id="terminal">
+    <div id="output"></div>
+    <div id="input-area">
+      <span id="prompt">></span>
+      <input type="text" id="command-input" autocomplete="off" autofocus>
+    </div>
+  </div>
+  <script>const id = {{id}};</script>
+  <script src="{{ url_for('static', filename='script1.js') }}"></script>
+</body>
+</html>

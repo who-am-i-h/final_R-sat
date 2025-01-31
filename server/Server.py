@@ -10,7 +10,8 @@ from master_mod import master_dashboard
 from file_upload_download import FileManagerServerside as FileManagerClient
 from ecc_implement import ECDH
 import logging
-
+import json
+from DFH import Dfh_server as Dfh
 logging.basicConfig(filename="Server.log",
                     format='%(asctime)s %(message)s',
                     filemode='w')
@@ -53,6 +54,30 @@ logger.info("server started and listening...")
 print(termcolor.colored("Server started and listening...", "green"))
 
 #methods
+def available_algo():
+    a = json.dumps({"supported":["RSADH", "ECDH"]})
+    return a
+
+def ecdh(conn, addr):
+    key_gen = conn.recv(1024).decode().split("-")
+    server_EC = ECDH()
+    conn.send(f"{server_EC.public_key.x}-{server_EC.public_key.y}".encode())
+    key = server_EC.generate_secret(int(key_gen[0]), int(key_gen[1]))
+    key = str(key).encode()[:16]
+    new_client = Client(key, conn, "ECCDH",True, addr)
+    return new_client
+
+def RSAdfh(conn, addr):
+    key_gen = conn.recv(1024).decode().split("-")
+    a, mod = int(key_gen[0]), int(key_gen[1])
+    client_secret = int(key_gen[2])
+    server_df = Dfh(a, mod)
+    secret = server_df.private_expo()
+    key = server_df.genrate_secret(client_secret)
+    conn.send(str(secret).encode())
+    key = str(key)[:16].encode()
+    new_client = Client(key, conn, "RSADH",True, addr)
+    return new_client
 
 def color(text, col):
     return termcolor.colored(text, col)
@@ -61,17 +86,24 @@ def handle_clients():
     global clients
     counter = 0
     while True:
-        conn, addr = s.accept()        
-        key_gen = conn.recv(1024).decode().split("-")
-        server_EC = ECDH()
-        conn.send(f"{server_EC.public_key.x}-{server_EC.public_key.y}".encode())
-        key = server_EC.generate_secret(int(key_gen[0]), int(key_gen[1]))
-        key = str(key).encode()[:16]
-        new_client = Client(key, conn, True, addr)
+        conn, addr = s.accept()               
+        algo = available_algo()
+        conn.send(algo.encode())
+        x  = conn.recv(1024)
         try:
-            new_client.os = new_client.recv()
+            selected = json.loads(x)
         except:
-            new_client.os = "Unidentifed!!!"
+            logger.error(x)
+        status = json.dumps({"status": True})
+        conn.send(status.encode())
+        if selected["selected"] == "RSADH":
+            new_client = RSAdfh(conn, addr)
+        elif selected["selected"] == "ECDH":
+            new_client = ecdh(conn, addr)
+        try:
+            new_client.os = new_client.recv()                
+        except:
+            new_client.os = "Unidentified"
         with lock:
             counter += 1
             new_client.set_id(counter)
@@ -94,7 +126,7 @@ def show_clients():
         print(color("Connected clients:", "cyan"))
         for i, client in enumerate(clients):
             check_client(client)
-            print(f"[{i+1}] {color(client.addr, "blue")}"+f"-> client-id: {client.id}"+ f" Active {color("*", "green")}" if client.status else f"[{i+1}] {color(client.addr, "red")}"+f"-> client-id: {client.id}" + f" unActive {color("*", "red")}")
+            print(f"[{i+1}] {color(client.addr, "blue")}"+f" key_exchange[{client.key_algo}]"+f"-> client-id: {client.id}"+ f" Active {color("*", "green")}" if client.status else f"[{i+1}] {color(client.addr, "red")}"+f"-> client-id: {client.id}" + f" unActive {color("*", "red")}")
 
 def dashboard():
     global clients

@@ -9,13 +9,40 @@ import json
 from ecc_implement import ECDH
 import discord_logger
 import asyncio
+from DFH import Dfh_server as Dfh
 from datetime import datetime
+
+def available_algo():
+    a = json.dumps({"supported":["RSADH", "ECDH"]})
+    return a
+
+def ecdh(conn, addr):
+    key_gen = conn.recv(1024).decode().split("-")
+    server_EC = ECDH()
+    conn.send(f"{server_EC.public_key.x}-{server_EC.public_key.y}".encode())
+    key = server_EC.generate_secret(int(key_gen[0]), int(key_gen[1]))
+    key = str(key).encode()[:16]
+    new_client = Client(key, conn, "ECCDH",True, addr)
+    return new_client
+
+def RSAdfh(conn, addr):
+    key_gen = conn.recv(1024).decode().split("-")
+    a, mod = int(key_gen[0]), int(key_gen[1])
+    client_secret = int(key_gen[2])
+    server_df = Dfh(a, mod)
+    secret = server_df.private_expo()
+    key = server_df.genrate_secret(client_secret)
+    conn.send(str(secret).encode())
+    key = str(key)[:16].encode()
+    new_client = Client(key, conn, "RSADH", True, addr)
+    return new_client
+
 with open("config.json", "r") as f:
     users_db = json.load(f)
     f.close()
 
 if users_db["admin"] == "":
-    users_db = {"admin": bcrypt.hashpw(("admin").encode('utf-8'), bcrypt.gensalt()).decode('utf-8')}
+    users_db = {"admin": bcrypt.hashpw(("admin").encode('utf-8'), bcrypt.gensalt()).decode('utf-8'), "TOKEN": users_db["TOKEN"]}
     with open("config.json", "w") as f:
         json.dump(users_db, f, ensure_ascii=False)
         f.close()
@@ -53,15 +80,9 @@ class ServerState:
     def get_client_count(self):
         with self._lock:
             return len(self.clients)
-
-
 app = Flask(__name__)
-
 app.secret_key = secrets.token_hex(16)
-
-
 server_state = ServerState()
-
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 HOST = socket.gethostbyname(socket.gethostname())
 PORT = 6969
@@ -75,13 +96,19 @@ def handle_clients():
     while True:
         try:
             conn, addr = s.accept()
-            print(f"New connection from {addr}")
-            key_gen = conn.recv(1024).decode().split("-")
-            server_EC = ECDH()
-            conn.send(f"{server_EC.public_key.x}-{server_EC.public_key.y}".encode())
-            key = server_EC.generate_secret(int(key_gen[0]), int(key_gen[1]))
-            key = str(key).encode()[:16]
-            new_client = Client(key, conn, True, addr)
+            algo = available_algo()
+            conn.send(algo.encode())
+            x  = conn.recv(1024)
+            try:
+                selected = json.loads(x)
+            except:
+                print(x)
+            status = json.dumps({"status": True})
+            conn.send(status.encode())
+            if selected["selected"] == "RSADH":
+                new_client = RSAdfh(conn, addr)
+            elif selected["selected"] == "ECDH":
+                new_client = ecdh(conn, addr)
             try:
                 new_client.os = new_client.recv()                
             except:
@@ -118,6 +145,22 @@ def send_log(log: str):
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/verify", methods = ["POST"])
+@login_required
+def check_delete():
+    data = request.get_json()
+    with open("config.json", "r") as f:
+        user_db = json.load(f)
+        f.close()
+    
+    if bcrypt.checkpw(data["password"].encode(), user_db["admin"].encode('utf-8')):
+        return jsonify({"message" : "Password correct!"}), 200
+    else:
+        print("wrong password")
+        send_log("Wrong password for client delete!")
+        return jsonify({"message" : "wrong password"}), 401
+
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -251,6 +294,7 @@ def pchange():
     return render_template("change_password.html")
 
 @app.route("/delete/<int:client_id>")
+@login_required
 def delete_client(client_id):
     clients = server_state.get_clients()
     with server_state._lock:

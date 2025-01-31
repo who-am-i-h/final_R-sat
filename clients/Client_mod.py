@@ -3,13 +3,14 @@ from crypton import Crypto
 
 
 class Client:
-    def __init__(self, key, conn, status = True,addr = None, os = None):
+    def __init__(self, key, conn, key_algo,status = True,addr = None, os = None):
         self.key = key
         self.status = status
         self.addr = addr
         self.socket = conn
         self.crypto = Crypto(self.key)
         self.os = os
+        self.key_algo = key_algo
 
     def set_id(self, id):
         self.id = id
